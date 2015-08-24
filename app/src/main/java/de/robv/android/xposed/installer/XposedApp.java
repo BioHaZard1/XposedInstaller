@@ -103,7 +103,7 @@ public class XposedApp extends Application
 
 			ActivityManager.TaskDescription tDesc = new ActivityManager.TaskDescription(
 					activity.getString(R.string.app_name), drawableToBitmap(
-							activity.getDrawable(R.mipmap.ic_launcher)),
+							activity.getDrawable(R.drawable.ic_launcher)),
 					color);
 			activity.setTaskDescription(tDesc);
 
