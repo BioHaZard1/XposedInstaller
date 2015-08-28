@@ -1,5 +1,22 @@
 package de.robv.android.xposed.installer.repo;
 
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LevelListDrawable;
+import android.os.AsyncTask;
+import android.text.Html;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.util.Log;
+import android.util.Pair;
+import android.widget.TextView;
+
+import com.squareup.picasso.Picasso;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -7,11 +24,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-import android.text.Html;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.util.Log;
-import android.util.Pair;
+import de.robv.android.xposed.installer.R;
 
 public class RepoParser {
 	public final static String TAG = "XposedRepoParser";
@@ -20,18 +33,8 @@ public class RepoParser {
 	protected RepoParserCallback mCallback;
 	private boolean mRepoEventTriggered = false;
 
-	public interface RepoParserCallback {
-		public void onRepositoryMetadata(Repository repository);
-		public void onNewModule(Module module);
-		public void onRemoveModule(String packageName);
-		public void onCompleted(Repository repository);
-	}
-
-	public static void parse(InputStream is, RepoParserCallback callback) throws XmlPullParserException, IOException {
-		new RepoParser(is, callback).readRepo();
-	}
-
-	protected RepoParser(InputStream is, RepoParserCallback callback) throws XmlPullParserException, IOException {
+	protected RepoParser(InputStream is, RepoParserCallback callback)
+			throws XmlPullParserException, IOException {
 		XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 		parser = factory.newPullParser();
 		parser.setInput(is, null);
@@ -39,10 +42,51 @@ public class RepoParser {
 		mCallback = callback;
 	}
 
+	public static void parse(InputStream is, RepoParserCallback callback)
+			throws XmlPullParserException, IOException {
+		new RepoParser(is, callback).readRepo();
+	}
+
+	public static Spanned parseSimpleHtml(final Context c, String source,
+			final TextView textView) {
+		source = source.replaceAll("<li>", "\t\u0095 ");
+		source = source.replaceAll("</li>", "<br>");
+		Spanned html = Html.fromHtml(source, new Html.ImageGetter() {
+			@Override
+			public Drawable getDrawable(String source) {
+				LevelListDrawable d = new LevelListDrawable();
+				Drawable empty = c.getResources()
+						.getDrawable(R.drawable.ic_no_image);
+				d.addLevel(0, 0, empty);
+				assert empty != null;
+				d.setBounds(0, 0, empty.getIntrinsicWidth(),
+						empty.getIntrinsicHeight());
+				new ImageGetterAsyncTask(c, source, d).execute(textView);
+
+				return d;
+			}
+		}, null);
+
+		// trim trailing newlines
+		int len = html.length();
+		int end = len;
+		for (int i = len - 1; i >= 0; i--) {
+			if (html.charAt(i) != '\n')
+				break;
+			end = i;
+		}
+
+		if (end == len)
+			return html;
+		else
+			return new SpannableStringBuilder(html, 0, end);
+	}
+
 	protected void readRepo() throws XmlPullParserException, IOException {
 		parser.require(XmlPullParser.START_TAG, NS, "repository");
 		Repository repository = new Repository();
-		repository.isPartial = "true".equals(parser.getAttributeValue(NS, "partial"));
+		repository.isPartial = "true"
+				.equals(parser.getAttributeValue(NS, "partial"));
 		repository.partialUrl = parser.getAttributeValue(NS, "partial-url");
 		repository.version = parser.getAttributeValue(NS, "version");
 
@@ -76,7 +120,8 @@ public class RepoParser {
 		mRepoEventTriggered = true;
 	}
 
-	protected Module readModule(Repository repository) throws XmlPullParserException, IOException {
+	protected Module readModule(Repository repository)
+			throws XmlPullParserException, IOException {
 		parser.require(XmlPullParser.START_TAG, NS, "module");
 		final int startDepth = parser.getDepth();
 
@@ -142,27 +187,8 @@ public class RepoParser {
 		}
 	}
 
-	public static Spanned parseSimpleHtml(String source) {
-		source = source.replaceAll("<li>", "\t\u0095 ");
-		source = source.replaceAll("</li>", "<br>");
-		Spanned html = Html.fromHtml(source);
-
-		// trim trailing newlines
-		int len = html.length();
-		int end = len;
-		for (int i = len - 1; i >= 0; i--) {
-			if (html.charAt(i) != '\n')
-				break;
-			end = i;
-		}
-
-		if (end == len)
-			return html;
-		else
-			return new SpannableStringBuilder(html, 0, end);
-	}
-
-	protected ModuleVersion readModuleVersion(Module module) throws XmlPullParserException, IOException {
+	protected ModuleVersion readModuleVersion(Module module)
+			throws XmlPullParserException, IOException {
 		parser.require(XmlPullParser.START_TAG, NS, "version");
 		final int startDepth = parser.getDepth();
 		ModuleVersion version = new ModuleVersion(module);
@@ -187,6 +213,14 @@ public class RepoParser {
 				version.downloadLink = parser.nextText();
 			} else if (tagName.equals("md5sum")) {
 				version.md5sum = parser.nextText();
+			} else if (tagName.contains("size")) {
+				try {
+					version.size = Long.parseLong(parser.nextText());
+				} catch (NumberFormatException nfe) {
+					logError(nfe.getMessage());
+					leave(startDepth);
+					return null;
+				}
 			} else if (tagName.equals("changelog")) {
 				String isHtml = parser.getAttributeValue(NS, "html");
 				if (isHtml != null && isHtml.equals("true"))
@@ -203,7 +237,8 @@ public class RepoParser {
 		return version;
 	}
 
-	protected String readRemoveModule() throws XmlPullParserException, IOException {
+	protected String readRemoveModule()
+			throws XmlPullParserException, IOException {
 		parser.require(XmlPullParser.START_TAG, NS, "remove-module");
 		final int startDepth = parser.getDepth();
 
@@ -217,10 +252,12 @@ public class RepoParser {
 		return packageName;
 	}
 
-	protected void skip(boolean showWarning) throws XmlPullParserException, IOException {
+	protected void skip(boolean showWarning)
+			throws XmlPullParserException, IOException {
 		parser.require(XmlPullParser.START_TAG, null, null);
 		if (showWarning)
-			Log.w(TAG, "skipping unknown/erronous tag: " + parser.getPositionDescription());
+			Log.w(TAG, "skipping unknown/erronous tag: "
+					+ parser.getPositionDescription());
 		int level = 1;
 		while (level > 0) {
 			int eventType = parser.next();
@@ -232,8 +269,10 @@ public class RepoParser {
 		}
 	}
 
-	protected void leave(int targetDepth) throws XmlPullParserException, IOException {
-		Log.w(TAG, "leaving up to level " + targetDepth + ": " + parser.getPositionDescription());
+	protected void leave(int targetDepth)
+			throws XmlPullParserException, IOException {
+		Log.w(TAG, "leaving up to level " + targetDepth + ": "
+				+ parser.getPositionDescription());
 		while (parser.getDepth() > targetDepth) {
 			while (parser.next() != XmlPullParser.END_TAG) {
 				// do nothing
@@ -244,4 +283,59 @@ public class RepoParser {
 	protected void logError(String error) {
 		Log.e(TAG, parser.getPositionDescription() + ": " + error);
 	}
+
+	public interface RepoParserCallback {
+		void onRepositoryMetadata(Repository repository);
+
+		void onNewModule(Module module);
+
+		void onRemoveModule(String packageName);
+
+		void onCompleted(Repository repository);
+	}
+
+	static class ImageGetterAsyncTask
+			extends AsyncTask<TextView, Void, Bitmap> {
+
+		private LevelListDrawable levelListDrawable;
+		private Context context;
+		private String source;
+		private TextView t;
+
+		public ImageGetterAsyncTask(Context context, String source,
+				LevelListDrawable levelListDrawable) {
+			this.context = context;
+			this.source = source;
+			this.levelListDrawable = levelListDrawable;
+		}
+
+		@Override
+		protected Bitmap doInBackground(TextView... params) {
+			t = params[0];
+			try {
+				return Picasso.with(context).load(source).get();
+			} catch (Exception e) {
+				return null;
+			}
+		}
+
+		@Override
+		protected void onPostExecute(final Bitmap bitmap) {
+			try {
+				Drawable d = new BitmapDrawable(context.getResources(), bitmap);
+				Point size = new Point();
+				((Activity) context).getWindowManager().getDefaultDisplay()
+						.getSize(size);
+				int multiplier = size.x / bitmap.getWidth();
+				levelListDrawable.addLevel(1, 1, d);
+				levelListDrawable.setBounds(0, 0,
+						bitmap.getWidth() * multiplier,
+						bitmap.getHeight() * multiplier);
+				levelListDrawable.setLevel(1);
+				t.setText(t.getText());
+			} catch (Exception e) { /* Like a null bitmap, etc. */
+			}
+		}
+	}
+
 }

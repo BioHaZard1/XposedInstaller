@@ -1,7 +1,8 @@
 package de.robv.android.xposed.installer;
 
-import java.util.List;
+import static de.robv.android.xposed.installer.XposedApp.darkenColor;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
@@ -17,6 +18,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+
+import java.util.List;
+
 import de.robv.android.xposed.installer.repo.Module;
 import de.robv.android.xposed.installer.util.ModuleUtil;
 import de.robv.android.xposed.installer.util.ModuleUtil.InstalledModule;
@@ -26,21 +30,18 @@ import de.robv.android.xposed.installer.util.RepoLoader.RepoListener;
 import de.robv.android.xposed.installer.util.ThemeUtil;
 import de.robv.android.xposed.installer.util.UIUtil;
 
-
-public class DownloadDetailsActivity extends XposedBaseActivity implements RepoListener, ModuleListener {
-
-	private ViewPager mPager;
-	private String mPackageName;
-	private static RepoLoader sRepoLoader = RepoLoader.getInstance();
-	private static ModuleUtil sModuleUtil = ModuleUtil.getInstance();
-	private Module mModule;
-	private InstalledModule mInstalledModule;
-	private Toolbar mToolbar;
-	private TabLayout mTabLayout;
+public class DownloadDetailsActivity extends XposedBaseActivity
+		implements RepoListener, ModuleListener {
 
 	public static final int DOWNLOAD_DESCRIPTION = 0;
 	public static final int DOWNLOAD_VERSIONS = 1;
 	public static final int DOWNLOAD_SETTINGS = 2;
+	private static RepoLoader sRepoLoader = RepoLoader.getInstance();
+	private static ModuleUtil sModuleUtil = ModuleUtil.getInstance();
+	private ViewPager mPager;
+	private String mPackageName;
+	private Module mModule;
+	private InstalledModule mInstalledModule;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -58,11 +59,7 @@ public class DownloadDetailsActivity extends XposedBaseActivity implements RepoL
 		if (mModule != null) {
 			setContentView(R.layout.activity_download_details);
 
-			if (UIUtil.isLollipop()) {
-				this.getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorPrimaryDark));
-			}
-
-			mToolbar = (Toolbar) findViewById(R.id.toolbar);
+			Toolbar mToolbar = (Toolbar) findViewById(R.id.toolbar);
 			setSupportActionBar(mToolbar);
 
 			mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
@@ -78,37 +75,57 @@ public class DownloadDetailsActivity extends XposedBaseActivity implements RepoL
 				ab.setDisplayHomeAsUpEnabled(true);
 			}
 
-			((TextView) findViewById(android.R.id.title)).setText(mModule.name);
+			TextView title = (TextView) findViewById(android.R.id.title);
+			title.setText(mModule.name);
+			title.setBackgroundColor(XposedApp.getColor(this));
 
 			setupTabs();
 
+			Boolean directDownload = getIntent()
+					.getBooleanExtra("direct_download", false);
 			// Updates available => start on the versions page
-			if (mInstalledModule != null && mInstalledModule.isUpdate(sRepoLoader.getLatestVersion(mModule)))
+			if (mInstalledModule != null
+					&& mInstalledModule
+							.isUpdate(sRepoLoader.getLatestVersion(mModule))
+					|| directDownload)
 				mPager.setCurrentItem(DOWNLOAD_VERSIONS);
 
 		} else {
 			setContentView(R.layout.activity_download_details_not_found);
 
 			TextView txtMessage = (TextView) findViewById(android.R.id.message);
-			txtMessage.setText(getResources().getString(R.string.download_details_not_found, mPackageName));
+			txtMessage.setText(getResources().getString(
+					R.string.download_details_not_found, mPackageName));
 
-			findViewById(R.id.reload).setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					v.setEnabled(false);
-					sRepoLoader.triggerReload(true);
-				}
-			});
+			findViewById(R.id.reload)
+					.setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							v.setEnabled(false);
+							sRepoLoader.triggerReload(true);
+						}
+					});
 		}
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+
+		if (UIUtil.isLollipop())
+			getWindow().setStatusBarColor(
+					darkenColor(XposedApp.getColor(this), 0.85f));
+
 	}
 
 	private void setupTabs() {
 		mPager = (ViewPager) findViewById(R.id.download_pager);
-		mPager.setAdapter(new SwipeFragmentPagerAdapter(getSupportFragmentManager()));
-		mTabLayout = (TabLayout) findViewById(R.id.sliding_tabs);
+		mPager.setAdapter(
+				new SwipeFragmentPagerAdapter(getSupportFragmentManager()));
+		TabLayout mTabLayout = (TabLayout) findViewById(R.id.sliding_tabs);
 		mTabLayout.setupWithViewPager(mPager);
+		mTabLayout.setBackgroundColor(XposedApp.getColor(this));
 	}
-
 
 	private String getModulePackageName() {
 		Uri uri = getIntent().getData();
@@ -167,7 +184,8 @@ public class DownloadDetailsActivity extends XposedBaseActivity implements RepoL
 	}
 
 	@Override
-	public void onSingleInstalledModuleReloaded(ModuleUtil moduleUtil, String packageName, InstalledModule module) {
+	public void onSingleInstalledModuleReloaded(ModuleUtil moduleUtil,
+			String packageName, InstalledModule module) {
 		if (packageName.equals(mPackageName))
 			reload();
 	}
@@ -184,16 +202,36 @@ public class DownloadDetailsActivity extends XposedBaseActivity implements RepoL
 			case R.id.menu_refresh:
 				RepoLoader.getInstance().triggerReload(true);
 				return true;
+			case R.id.menu_share:
+
+				String text = mModule.name + " - ";
+				String s = getPackageManager()
+						.getInstallerPackageName(mPackageName);
+
+				if (s.equals(ModulesFragment.PLAY_STORE_PACKAGE)) {
+					text += String.format(ModulesFragment.PLAY_STORE_LINK,
+							mPackageName);
+				} else {
+					text += String.format(ModulesFragment.XPOSED_REPO_LINK,
+							mPackageName);
+				}
+
+				Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+				sharingIntent.setType("text/html");
+				sharingIntent.putExtra(Intent.EXTRA_TEXT, text);
+				startActivity(Intent.createChooser(sharingIntent,
+						getString(R.string.share)));
+				return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}
 
 	class SwipeFragmentPagerAdapter extends FragmentPagerAdapter {
 		final int PAGE_COUNT = 3;
-		private String tabTitles[] = new String[]{getString(R.string.download_details_page_description),
+		private String tabTitles[] = new String[] {
+				getString(R.string.download_details_page_description),
 				getString(R.string.download_details_page_versions),
-				getString(R.string.download_details_page_settings),
-		};
+				getString(R.string.download_details_page_settings), };
 
 		public SwipeFragmentPagerAdapter(FragmentManager fm) {
 			super(fm);
