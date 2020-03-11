@@ -1,7 +1,11 @@
 package de.robv.android.xposed.installer.widget;
 
+import android.Manifest;
 import android.app.DownloadManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,197 +13,242 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import de.robv.android.xposed.installer.R;
 import de.robv.android.xposed.installer.util.DownloadsUtil;
 import de.robv.android.xposed.installer.util.DownloadsUtil.DownloadFinishedCallback;
 import de.robv.android.xposed.installer.util.DownloadsUtil.DownloadInfo;
 
+import static de.robv.android.xposed.installer.XposedApp.WRITE_EXTERNAL_PERMISSION;
+
 public class DownloadView extends LinearLayout {
-	private DownloadInfo mInfo = null;
-	private String mUrl = null;
-	private String mTitle = null;
-	private DownloadFinishedCallback mCallback = null;
+    public static Button mClickedButton;
+    private final Button btnDownload;
+    private final Button btnDownloadCancel;
+    private final Button btnInstall;
+    private final Button btnSave;
+    private final ProgressBar progressBar;
+    private final TextView txtInfo;
+    public Fragment fragment;
+    private DownloadInfo mInfo = null;
+    private String mUrl = null;
+    private final Runnable refreshViewRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mUrl == null) {
+                btnDownload.setVisibility(View.GONE);
+                btnSave.setVisibility(View.GONE);
+                btnDownloadCancel.setVisibility(View.GONE);
+                btnInstall.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
+                txtInfo.setVisibility(View.VISIBLE);
+                txtInfo.setText(R.string.download_view_no_url);
+            } else if (mInfo == null) {
+                btnDownload.setVisibility(View.VISIBLE);
+                btnSave.setVisibility(View.VISIBLE);
+                btnDownloadCancel.setVisibility(View.GONE);
+                btnInstall.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
+                txtInfo.setVisibility(View.GONE);
+            } else {
+                switch (mInfo.status) {
+                    case DownloadManager.STATUS_PENDING:
+                    case DownloadManager.STATUS_PAUSED:
+                    case DownloadManager.STATUS_RUNNING:
+                        btnDownload.setVisibility(View.GONE);
+                        btnSave.setVisibility(View.GONE);
+                        btnDownloadCancel.setVisibility(View.VISIBLE);
+                        btnInstall.setVisibility(View.GONE);
+                        progressBar.setVisibility(View.VISIBLE);
+                        txtInfo.setVisibility(View.VISIBLE);
+                        if (mInfo.totalSize <= 0 || mInfo.status != DownloadManager.STATUS_RUNNING) {
+                            progressBar.setIndeterminate(true);
+                            txtInfo.setText(R.string.download_view_waiting);
+                        } else {
+                            progressBar.setIndeterminate(false);
+                            progressBar.setMax(mInfo.totalSize);
+                            progressBar.setProgress(mInfo.bytesDownloaded);
+                            txtInfo.setText(getContext().getString(
+                                    R.string.download_view_running,
+                                    mInfo.bytesDownloaded / 1024,
+                                    mInfo.totalSize / 1024));
+                        }
+                        break;
 
-	private final Button btnDownload;
-	private final Button btnDownloadCancel;
-	private final Button btnInstall;
-	private final ProgressBar progressBar;
-	private final TextView txtInfo;
+                    case DownloadManager.STATUS_FAILED:
+                        btnDownload.setVisibility(View.VISIBLE);
+                        btnSave.setVisibility(View.VISIBLE);
+                        btnDownloadCancel.setVisibility(View.GONE);
+                        btnInstall.setVisibility(View.GONE);
+                        progressBar.setVisibility(View.GONE);
+                        txtInfo.setVisibility(View.VISIBLE);
+                        txtInfo.setText(getContext().getString(
+                                R.string.download_view_failed, mInfo.reason));
+                        break;
 
-	public DownloadView(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		setFocusable(false);
-		setOrientation(LinearLayout.VERTICAL);
+                    case DownloadManager.STATUS_SUCCESSFUL:
+                        btnDownload.setVisibility(View.GONE);
+                        btnSave.setVisibility(View.GONE);
+                        btnDownloadCancel.setVisibility(View.GONE);
+                        btnInstall.setVisibility(View.VISIBLE);
+                        progressBar.setVisibility(View.GONE);
+                        txtInfo.setVisibility(View.VISIBLE);
+                        txtInfo.setText(R.string.download_view_successful);
+                        break;
+                }
+            }
+        }
+    };
+    private String mTitle = null;
+    private DownloadFinishedCallback mCallback = null;
 
-		LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		inflater.inflate(R.layout.download_view, this, true);
+    public DownloadView(Context context, final AttributeSet attrs) {
+        super(context, attrs);
+        setFocusable(false);
+        setOrientation(LinearLayout.VERTICAL);
 
-		btnDownload = (Button) findViewById(R.id.btnDownload);
-		btnDownloadCancel = (Button) findViewById(R.id.btnDownloadCancel);
-		btnInstall = (Button) findViewById(R.id.btnInstall);
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        inflater.inflate(R.layout.download_view, this, true);
 
-		btnDownload.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				mInfo = DownloadsUtil.add(getContext(), mTitle, mUrl, mCallback);
-				refreshViewFromUiThread();
+        btnDownload = findViewById(R.id.btnDownload);
+        btnDownloadCancel = findViewById(R.id.btnDownloadCancel);
+        btnInstall = findViewById(R.id.btnInstall);
+        btnSave = findViewById(R.id.save);
 
-				if (mInfo != null)
-					new DownloadMonitor().start();
-			}
-		});
+        btnDownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mClickedButton = btnDownload;
 
-		btnDownloadCancel.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (mInfo == null)
-					return;
+                mInfo = DownloadsUtil.addModule(getContext(), mTitle, mUrl, false, mCallback);
+                refreshViewFromUiThread();
 
-				DownloadsUtil.removeById(getContext(), mInfo.id);
-				// UI update will happen automatically by the DownloadMonitor
-			}
-		});
+                if (mInfo != null)
+                    new DownloadMonitor().start();
+            }
+        });
 
-		btnInstall.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (mCallback == null)
-					return;
+        btnSave.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mClickedButton = btnSave;
 
-				mCallback.onDownloadFinished(getContext(), mInfo);
-			}
-		});
+                if (checkPermissions())
+                    return;
 
-		progressBar = (ProgressBar) findViewById(R.id.progress);
-		txtInfo = (TextView) findViewById(R.id.txtInfo);
+                mInfo = DownloadsUtil.addModule(getContext(), mTitle, mUrl, true, new DownloadFinishedCallback() {
+                    @Override
+                    public void onDownloadFinished(Context context, DownloadInfo info) {
+                        Toast.makeText(context, context.getString(R.string.module_saved, info.localFilename), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
 
-		refreshViewFromUiThread();
-	}
+        btnDownloadCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mInfo == null)
+                    return;
 
-	private void refreshViewFromUiThread() {
-		refreshViewRunnable.run();
-	}
+                DownloadsUtil.removeById(getContext(), mInfo.id);
+                // UI update will happen automatically by the DownloadMonitor
+            }
+        });
 
-	private void refreshView() {
-		post(refreshViewRunnable);
-	}
+        btnInstall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCallback == null)
+                    return;
 
-	private final Runnable refreshViewRunnable = new Runnable() {
-		@Override
-		public void run() {
-			if (mUrl == null) {
-				btnDownload.setVisibility(View.GONE);
-				btnDownloadCancel.setVisibility(View.GONE);
-				btnInstall.setVisibility(View.GONE);
-				progressBar.setVisibility(View.GONE);
-				txtInfo.setVisibility(View.VISIBLE);
-				txtInfo.setText(R.string.download_view_no_url);
-				return;
-			} else if (mInfo == null) {
-				btnDownload.setVisibility(View.VISIBLE);
-				btnDownloadCancel.setVisibility(View.GONE);
-				btnInstall.setVisibility(View.GONE);
-				progressBar.setVisibility(View.GONE);
-				txtInfo.setVisibility(View.GONE);
-			} else {
-				switch (mInfo.status) {
-					case DownloadManager.STATUS_PENDING:
-					case DownloadManager.STATUS_PAUSED:
-					case DownloadManager.STATUS_RUNNING:
-						btnDownload.setVisibility(View.GONE);
-						btnDownloadCancel.setVisibility(View.VISIBLE);
-						btnInstall.setVisibility(View.GONE);
-						progressBar.setVisibility(View.VISIBLE);
-						txtInfo.setVisibility(View.VISIBLE);
-						if (mInfo.totalSize <= 0 || mInfo.status != DownloadManager.STATUS_RUNNING) {
-							progressBar.setIndeterminate(true);
-							txtInfo.setText(R.string.download_view_waiting);
-						} else {
-							progressBar.setIndeterminate(false);
-							progressBar.setMax(mInfo.totalSize);
-							progressBar.setProgress(mInfo.bytesDownloaded);
-							txtInfo.setText(getContext().getString(R.string.download_view_running,
-									mInfo.bytesDownloaded / 1024, mInfo.totalSize / 1024));
-						}
-						break;
+                mCallback.onDownloadFinished(getContext(), mInfo);
+            }
+        });
 
-					case DownloadManager.STATUS_FAILED:
-						btnDownload.setVisibility(View.VISIBLE);
-						btnDownloadCancel.setVisibility(View.GONE);
-						btnInstall.setVisibility(View.GONE);
-						progressBar.setVisibility(View.GONE);
-						txtInfo.setVisibility(View.VISIBLE);
-						txtInfo.setText(getContext().getString(R.string.download_view_failed, mInfo.reason));
-						break;
+        progressBar = findViewById(R.id.progress);
+        txtInfo = findViewById(R.id.txtInfo);
 
-					case DownloadManager.STATUS_SUCCESSFUL:
-						btnDownload.setVisibility(View.GONE);
-						btnDownloadCancel.setVisibility(View.GONE);
-						btnInstall.setVisibility(View.VISIBLE);
-						progressBar.setVisibility(View.GONE);
-						txtInfo.setVisibility(View.VISIBLE);
-						txtInfo.setText(R.string.download_view_successful);
-						break;
-				}
-			}
-		}
-	};
+        refreshViewFromUiThread();
+    }
 
-	public void setUrl(String url) {
-		mUrl = url;
+    private boolean checkPermissions() {
+        if (ActivityCompat.checkSelfPermission(this.getContext(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            fragment.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_EXTERNAL_PERMISSION);
+            return true;
+        }
+        return false;
+    }
 
-		if (mUrl != null)
-			mInfo = DownloadsUtil.getLatestForUrl(getContext(), mUrl);
-		else
-			mInfo = null;
+    private void refreshViewFromUiThread() {
+        refreshViewRunnable.run();
+    }
 
-		refreshView();
-	}
+    private void refreshView() {
+        post(refreshViewRunnable);
+    }
 
-	public String getUrl() {
-		return mUrl;
-	}
+    public String getUrl() {
+        return mUrl;
+    }
 
-	public void setTitle(String title) {
-		this.mTitle = title;
-	}
+    public void setUrl(String url) {
+        mUrl = url;
 
-	public String getTitle() {
-		return mTitle;
-	}
+        if (mUrl != null)
+            mInfo = DownloadsUtil.getLatestForUrl(getContext(), mUrl);
+        else
+            mInfo = null;
 
-	public void setDownloadFinishedCallback(DownloadFinishedCallback downloadFinishedCallback) {
-		this.mCallback = downloadFinishedCallback;
-	}
+        refreshView();
+    }
 
-	public DownloadFinishedCallback getDownloadFinishedCallback() {
-		return mCallback;
-	}
+    public String getTitle() {
+        return mTitle;
+    }
 
-	private class DownloadMonitor extends Thread {
-		public DownloadMonitor() {
-			super("DownloadMonitor");
-		}
+    public void setTitle(String title) {
+        this.mTitle = title;
+    }
 
-		@Override
-		public void run() {
-			while (true) {
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					return;
-				}
+    public DownloadFinishedCallback getDownloadFinishedCallback() {
+        return mCallback;
+    }
 
-				mInfo = DownloadsUtil.getById(getContext(), mInfo.id);
-				refreshView();
-				if (mInfo == null)
-					return;
+    public void setDownloadFinishedCallback(DownloadFinishedCallback downloadFinishedCallback) {
+        this.mCallback = downloadFinishedCallback;
+    }
 
-				if (mInfo.status != DownloadManager.STATUS_PENDING
-				 && mInfo.status != DownloadManager.STATUS_PAUSED
-				 && mInfo.status != DownloadManager.STATUS_RUNNING)
-					return;
-			}
-		}
-	}
+    private class DownloadMonitor extends Thread {
+        public DownloadMonitor() {
+            super("DownloadMonitor");
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    return;
+                }
+
+                try {
+                    mInfo = DownloadsUtil.getById(getContext(), mInfo.id);
+                } catch (NullPointerException ignored) {
+                }
+
+                refreshView();
+                if (mInfo == null)
+                    return;
+
+                if (mInfo.status != DownloadManager.STATUS_PENDING
+                        && mInfo.status != DownloadManager.STATUS_PAUSED
+                        && mInfo.status != DownloadManager.STATUS_RUNNING)
+                    return;
+            }
+        }
+    }
 }

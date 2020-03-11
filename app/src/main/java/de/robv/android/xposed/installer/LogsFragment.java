@@ -1,204 +1,351 @@
 package de.robv.android.xposed.installer;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.Calendar;
-
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.FileProvider;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.HorizontalScrollView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Calendar;
+
+import static de.robv.android.xposed.installer.XposedApp.WRITE_EXTERNAL_PERMISSION;
+import static de.robv.android.xposed.installer.XposedApp.createFolder;
+
 public class LogsFragment extends Fragment {
-	private File mFileErrorLog = new File(XposedApp.BASE_DIR + "log/error.log");
-	private File mFileErrorLogOld = new File(XposedApp.BASE_DIR + "log/error.log.old");
-	private static final int MAX_LOG_SIZE = 2*1024*1024; // 2 MB
-	private TextView mTxtLog;
-	private ScrollView mSVLog;
-	private HorizontalScrollView mHSVLog;
 
-	@Override
-	public void onActivityCreated(Bundle savedInstanceState) {
-		super.onActivityCreated(savedInstanceState);
-		setHasOptionsMenu(true);
-	}
+    private File mFileErrorLog = new File(XposedApp.BASE_DIR + "log/error.log");
+    private File mFileErrorLogOld = new File(
+            XposedApp.BASE_DIR + "log/error.log.old");
+    private TextView mTxtLog;
+    private ScrollView mSVLog;
+    private HorizontalScrollView mHSVLog;
+    private MenuItem mClickedMenuItem = null;
 
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		View v = inflater.inflate(R.layout.tab_logs, container, false);
-		mTxtLog = (TextView) v.findViewById(R.id.txtLog);
-		mSVLog = (ScrollView) v.findViewById(R.id.svLog);
-		mHSVLog = (HorizontalScrollView) v.findViewById(R.id.hsvLog);
-		reloadErrorLog();
-		return v;
-	}
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
 
-	@Override
-	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		inflater.inflate(R.menu.menu_logs, menu);
-	}
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.tab_logs, container, false);
+        mTxtLog = v.findViewById(R.id.txtLog);
+        mTxtLog.setTextIsSelectable(true);
+        mSVLog = v.findViewById(R.id.svLog);
+        mHSVLog = v.findViewById(R.id.hsvLog);
+/*
+        View scrollTop = v.findViewById(R.id.scroll_top);
+        View scrollDown = v.findViewById(R.id.scroll_down);
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.menu_refresh:
-			reloadErrorLog();
-			return true;
-		case R.id.menu_send:
-			send();
-			return true;
-		case R.id.menu_save:
-			save();
-			return true;
-		case R.id.menu_clear:
-			clear();
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
+        scrollTop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                scrollTop();
+            }
+        });
+        scrollDown.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                scrollDown();
+            }
+        });
+*/
 
-	private void reloadErrorLog() {
-		StringBuilder logContent = new StringBuilder(15 * 1024);
-		try {
-			FileInputStream fis = new FileInputStream(mFileErrorLog);
-			long skipped = skipLargeFile(fis, mFileErrorLog.length());
-			if (skipped > 0) {
-				logContent.append("-----------------\n");
-				logContent.append(getResources().getString(R.string.log_too_large, MAX_LOG_SIZE / 1024, skipped / 1024));
-				logContent.append("\n-----------------\n\n");
-			}
-			Reader reader = new InputStreamReader(fis);
-			char[] temp = new char[1024];
-			int read;
-			while ((read = reader.read(temp)) > 0) {
-				logContent.append(temp, 0, read);
-			}
-			reader.close();
-		} catch (IOException e) {
-			logContent.append(getResources().getString(R.string.logs_load_failed));
-			logContent.append('\n');
-			logContent.append(e.getMessage());
-		}
+        if (!XposedApp.getPreferences().getBoolean("hide_logcat_warning", false)) {
+            final View dontShowAgainView = inflater.inflate(R.layout.dialog_install_warning, null);
 
-		if (logContent.length() > 0)
-			mTxtLog.setText(logContent.toString());
-		else
-			mTxtLog.setText(R.string.log_is_empty);
+            TextView message = dontShowAgainView.findViewById(android.R.id.message);
+            message.setText(R.string.not_logcat);
 
-		mSVLog.post(new Runnable() {
-			@Override
-			public void run() {
-				mSVLog.scrollTo(0, mTxtLog.getHeight());
-			}
-		});
-		mHSVLog.post(new Runnable() {
-			@Override
-			public void run() {
-				mHSVLog.scrollTo(0, 0);
-			}
-		});
-	}
+            new MaterialDialog.Builder(getActivity())
+                    .title(R.string.install_warning_title)
+                    .customView(dontShowAgainView, false)
+                    .positiveText(android.R.string.ok)
+                    .callback(new MaterialDialog.ButtonCallback() {
+                        @Override
+                        public void onPositive(MaterialDialog dialog) {
+                            super.onPositive(dialog);
+                            CheckBox checkBox = dontShowAgainView.findViewById(android.R.id.checkbox);
+                            if (checkBox.isChecked())
+                                XposedApp.getPreferences().edit().putBoolean("hide_logcat_warning", true).apply();
+                        }
+                    }).cancelable(false).show();
+        }
+        return v;
+    }
 
-	private void clear() {
-		try {
-			new FileOutputStream(mFileErrorLog).close();;
-			mFileErrorLogOld.delete();
-			Toast.makeText(getActivity(), R.string.logs_cleared, Toast.LENGTH_SHORT).show();
-			reloadErrorLog();
-		} catch (IOException e) {
-			Toast.makeText(getActivity(),
-					getResources().getString(R.string.logs_clear_failed) + "\n" + e.getMessage(),
-					Toast.LENGTH_LONG).show();
-			return;
-		}
-	}
+    @Override
+    public void onResume() {
+        super.onResume();
+        reloadErrorLog();
+    }
 
-	private void send() {
-		Intent sendIntent = new Intent();
-		sendIntent.setAction(Intent.ACTION_SEND);
-		sendIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(mFileErrorLog));
-		sendIntent.setType("application/text"); // text/plain is handled wrongly by too many apps
-		startActivity(Intent.createChooser(sendIntent, getResources().getString(R.string.menuSend)));
-	}
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_logs, menu);
+    }
 
-	@SuppressLint("DefaultLocale")
-	private void save() {
-		if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-			Toast.makeText(getActivity(), R.string.sdcard_not_writable, Toast.LENGTH_LONG).show();
-			return;
-		}
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        mClickedMenuItem = item;
+        switch (item.getItemId()) {
+            case R.id.menu_scroll_top:
+                scrollTop();
+                break;
+            case R.id.menu_scroll_down:
+                scrollDown();
+                break;
+            case R.id.menu_refresh:
+                reloadErrorLog();
+                return true;
+            case R.id.menu_send:
+                try {
+                    send();
+                } catch (NullPointerException ignored) {
+                }
+                return true;
+            case R.id.menu_save:
+                save();
+                return true;
+            case R.id.menu_clear:
+                clear();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
-		Calendar now = Calendar.getInstance();
-		String filename = String.format("xposed_%s_%04d%02d%02d_%02d%02d%02d.log", "error",
-				now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1, now.get(Calendar.DAY_OF_MONTH),
-				now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE), now.get(Calendar.SECOND));
-		File targetFile = new File(getActivity().getExternalFilesDir(null), filename);
+    private void scrollTop() {
+        mSVLog.post(new Runnable() {
+            @Override
+            public void run() {
+                mSVLog.scrollTo(0, 0);
+            }
+        });
+        mHSVLog.post(new Runnable() {
+            @Override
+            public void run() {
+                mHSVLog.scrollTo(0, 0);
+            }
+        });
+    }
 
-		try {
-			FileInputStream in = new FileInputStream(mFileErrorLog);
-			FileOutputStream out = new FileOutputStream(targetFile);
+    private void scrollDown() {
+        mSVLog.post(new Runnable() {
+            @Override
+            public void run() {
+                mSVLog.scrollTo(0, mTxtLog.getHeight());
+            }
+        });
+        mHSVLog.post(new Runnable() {
+            @Override
+            public void run() {
+                mHSVLog.scrollTo(0, 0);
+            }
+        });
+    }
 
-			long skipped = skipLargeFile(in, mFileErrorLog.length());
-			if (skipped > 0) {
-				StringBuilder logContent = new StringBuilder(512);
-				logContent.append("-----------------\n");
-				logContent.append(getResources().getString(R.string.log_too_large, MAX_LOG_SIZE / 1024, skipped / 1024));
-				logContent.append("\n-----------------\n\n");
-				out.write(logContent.toString().getBytes());
-			}
+    private void reloadErrorLog() {
+        new LogsReader().execute(mFileErrorLog);
+        mSVLog.post(new Runnable() {
+            @Override
+            public void run() {
+                mSVLog.scrollTo(0, mTxtLog.getHeight());
+            }
+        });
+        mHSVLog.post(new Runnable() {
+            @Override
+            public void run() {
+                mHSVLog.scrollTo(0, 0);
+            }
+        });
+    }
 
-			byte[] buffer = new byte[1024];
-			int len;
-			while ((len = in.read(buffer)) > 0){
-				out.write(buffer, 0, len);
-			}
-			in.close();
-			out.close();
-		} catch (IOException e) {
-			Toast.makeText(getActivity(),
-					getResources().getString(R.string.logs_save_failed) + "\n" + e.getMessage(),
-					Toast.LENGTH_LONG).show();
-			return;
-		}
+    private void clear() {
+        try {
+            new FileOutputStream(mFileErrorLog).close();
+            mFileErrorLogOld.delete();
+            mTxtLog.setText(R.string.log_is_empty);
+            Toast.makeText(getActivity(), R.string.logs_cleared,
+                    Toast.LENGTH_SHORT).show();
+            reloadErrorLog();
+        } catch (IOException e) {
+            Toast.makeText(getActivity(), getResources().getString(R.string.logs_clear_failed) + "n" + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
 
-		Toast.makeText(getActivity(), targetFile.toString(), Toast.LENGTH_LONG).show();
-	}
+    private void send() {
+        Uri uri = FileProvider.getUriForFile(getActivity(), "de.robv.android.xposed.installer.fileprovider", mFileErrorLog);
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_STREAM, uri);
+        sendIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        sendIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(save()));
+        sendIntent.setType("application/html");
+        startActivity(Intent.createChooser(sendIntent, getResources().getString(R.string.menuSend)));
+    }
 
-	private long skipLargeFile(InputStream is, long length) throws IOException {
-		if (length < MAX_LOG_SIZE)
-			return 0;
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions,
+                grantResults);
+        if (requestCode == WRITE_EXTERNAL_PERMISSION) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (mClickedMenuItem != null) {
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            onOptionsItemSelected(mClickedMenuItem);
+                        }
+                    }, 500);
+                }
+            } else {
+                Toast.makeText(getActivity(), R.string.permissionNotGranted, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
 
-		long skipped = length - MAX_LOG_SIZE;
-		long yetToSkip = skipped;
-		do {
-			yetToSkip -= is.skip(yetToSkip);
-		} while (yetToSkip > 0);
+    @SuppressLint("DefaultLocale")
+    private File save() {
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_EXTERNAL_PERMISSION);
+            return null;
+        }
 
-		int c;
-		do {
-			c = is.read();
-			if (c == -1)
-				break;
-			skipped++;
-		} while (c != '\n');
+        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            Toast.makeText(getActivity(), R.string.sdcard_not_writable, Toast.LENGTH_LONG).show();
+            return null;
+        }
 
-		return skipped;
-	}
+        Calendar now = Calendar.getInstance();
+        String filename = String.format(
+                "xposed_%s_%04d%02d%02d_%02d%02d%02d.log", "error",
+                now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1,
+                now.get(Calendar.DAY_OF_MONTH), now.get(Calendar.HOUR_OF_DAY),
+                now.get(Calendar.MINUTE), now.get(Calendar.SECOND));
+
+        File targetFile = new File(createFolder(), filename);
+
+        try {
+            FileInputStream in = new FileInputStream(mFileErrorLog);
+            FileOutputStream out = new FileOutputStream(targetFile);
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = in.read(buffer)) > 0) {
+                out.write(buffer, 0, len);
+            }
+            in.close();
+            out.close();
+
+            Toast.makeText(getActivity(), targetFile.toString(),
+                    Toast.LENGTH_LONG).show();
+            return targetFile;
+        } catch (IOException e) {
+            Toast.makeText(getActivity(), getResources().getString(R.string.logs_save_failed) + "\n" + e.getMessage(), Toast.LENGTH_LONG).show();
+            return null;
+        }
+    }
+
+    private class LogsReader extends AsyncTask<File, Integer, String> {
+
+        private static final int MAX_LOG_SIZE = 1000 * 1024; // 1000 KB
+        private MaterialDialog mProgressDialog;
+
+        private long skipLargeFile(BufferedReader is, long length) throws IOException {
+            if (length < MAX_LOG_SIZE)
+                return 0;
+
+            long skipped = length - MAX_LOG_SIZE;
+            long yetToSkip = skipped;
+            do {
+                yetToSkip -= is.skip(yetToSkip);
+            } while (yetToSkip > 0);
+
+            int c;
+            do {
+                c = is.read();
+                if (c == -1)
+                    break;
+                skipped++;
+            } while (c != '\n');
+
+            return skipped;
+
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mTxtLog.setText("");
+            mProgressDialog = new MaterialDialog.Builder(getContext()).content(R.string.loading).progress(true, 0).show();
+        }
+
+        @Override
+        protected String doInBackground(File... log) {
+            Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 2);
+
+            StringBuilder llog = new StringBuilder(15 * 10 * 1024);
+            try {
+                File logfile = log[0];
+                BufferedReader br;
+                br = new BufferedReader(new FileReader(logfile));
+                long skipped = skipLargeFile(br, logfile.length());
+                if (skipped > 0) {
+                    llog.append("-----------------\n");
+                    llog.append("Log too long");
+                    llog.append("\n-----------------\n\n");
+                }
+
+                char[] temp = new char[1024];
+                int read;
+                while ((read = br.read(temp)) > 0) {
+                    llog.append(temp, 0, read);
+                }
+                br.close();
+            } catch (IOException e) {
+                llog.append("Cannot read log");
+                llog.append(e.getMessage());
+            }
+
+            return llog.toString();
+        }
+
+        @Override
+        protected void onPostExecute(String llog) {
+            mProgressDialog.dismiss();
+            mTxtLog.setText(llog);
+
+            if (llog.length() == 0)
+                mTxtLog.setText(R.string.log_is_empty);
+        }
+
+    }
 }

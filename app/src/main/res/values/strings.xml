@@ -1,29 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
     <!-- General/various strings -->
     <string name="menuSend">Send</string>
     <string name="menuSaveToSd">Save to SD card</string>
-    <string name="xposed_not_active">The latest version of Xposed is currently not active. Did you install the framework and reboot?</string>
+    <string name="xposed_not_active">The latest version of Xposed is currently not active. Did you install the Framework and reboot?</string>
 
     <!-- Welcome screen / main sections -->
-    <string name="welcome">Welcome to the <b>Xposed Installer</b>!\nPlease choose what you want to do:</string>
     <string name="tabInstall">Framework</string>
-    <string name="tabInstallDescription">Here you can manage the Xposed framework, which is required for any modules to work.</string>
-    <string name="tabModules">Modules</string>
-    <string name="tabModulesDescription">The framework itself doesn\'t add any functionality. You need modules for that. In this section you can activate modules after you have installed them.</string>
     <string name="tabDownload">Download</string>
-    <string name="tabDownloadDescription">This section gives you access to a repository of modules, so you can search and download the ones you like and keep them up to date.</string>
-    <string name="welcome_framework_update_available">An update for the Xposed framework is available (%s).</string>
-    <string name="welcome_update_available">One or more update(s) for modules available.</string>
-    <string name="tabSettings">Settings</string>
-    <string name="tabSettingsDescription">Go to this section to configure the Xposed Installer and framework.</string>
-    <string name="tabSupport">Support</string>
-    <string name="tabSupportDescription">Find help for Xposed-related issues. You can also donate to say thanks for Xposed.</string>
-    <string name="tabLogs">Logs</string>
-    <string name="tabLogsDescription">Display and save/send logs of the Xposed framework.</string>
-    <string name="tabAbout">About</string>
-    <string name="tabAboutDescription">Learn about the people who created Xposed, where to get support for this app etc.</string>
+    <string name="welcome_framework_update_available">An update for the Xposed Framework is available (%s).</string>
 
     <!-- navigation view items -->
     <string name="nav_item_install">Framework</string>
@@ -39,15 +25,10 @@
     <!-- Installer tab -->
     <string name="install">Install/Update</string>
     <string name="uninstall">Uninstall</string>
-    <string name="installedVersion">active</string>
-    <string name="latestVersion">bundled</string>
-    <string name="versions">Versions:</string>
-    <string name="install_header_reboot">Reboot</string>
     <string name="soft_reboot">Soft reboot</string>
     <string name="reboot">Reboot</string>
     <string name="areyousure">Are you sure?</string>
     <string name="phone_not_compatible">Xposed is not (yet) compatible with Android SDK version %1$d or your processor architecture (%2$s).</string>
-    <string name="not_tested_but_compatible">Xposed has not been tested with Android SDK version %d, but it seems to be compatible. You can try installing it if you feel adventurous.</string>
     <string name="reboot_failed">Reboot failed. Please use the device\'s normal reboot function.</string>
     <string name="auto_flash_note">%s should be flashed automatically once you press "OK".</string>
     <string name="manual_flash_note">Please flash %s from the SD card to complete the operation.</string>
@@ -57,13 +38,8 @@
     <string name="install_warning">In some cases, your device might no longer boot after installing Xposed.\n\nIf you never heard about \"soft brick\" and \"bootloop\" before or if you don\'t know how to recover from such a situation, do <b>NOT</b> install Xposed!\n\nIn any case, having a recent backup is highly recommended.</string>
     <string name="dont_show_again">Don\'t show this again</string>
     <string name="install_known_issue">There seems to be a known issue (\"%s\") with your ROM. Installing Xposed might not work or lead to severe problems. Click here for details about the issue.</string>
-    <string name="install_reverted">app_process version \"%1$s\" has been installed previously but version \"%2$s\" was found now. If you didn\'t expect an old file to be restored, you might want to try installing via recovery (auto or manual).</string>
-    <string name="uninstall_reverted">app_process was uninstalled previously but version \"%s\" was found now. If you didn\'t expect an old file to be restored, you might want to try uninstalling via recovery (auto or manual).</string>
-    <string name="tap_to_dismiss">Tap to dismiss</string>
-    <string name="sdcard_location">SD card: %s</string>
-    <string name="installation_lollipop">The Xposed framework is not installed. Please download the latest ZIP file from XDA and flash it manually via recovery.</string>
-    <string name="installed_lollipop">Xposed framework version %s is active.</string>
-    <string name="installed_lollipop_inactive">Xposed framework version %s is installed, but not active. Please check the logs for details.</string>
+    <string name="installed_lollipop">Xposed Framework version %s is active.</string>
+    <string name="installed_lollipop_inactive">Xposed Framework version %s is installed, but not active. Please check the logs for details.</string>
     <string name="modules_updates_available">Module update(s) are available</string>
 
     <!-- File operations -->
@@ -82,8 +58,6 @@
     <string name="file_move_failed">Could not move %1$s to %2$s</string>
     <string name="file_set_perms_failed">Could not set permissions for %s</string>
     <string name="file_set_owner_failed">Could not set owner for %s</string>
-    <string name="file_removing">Removing %s&#8230;</string>
-    <string name="file_remove_failed">Could not remove %s</string>
     <string name="file_creating_directory">Creating directory %s&#8230;</string>
     <string name="file_create_directory_failed">Could not create directory %s</string>
     <string name="file_writing_recovery_command">Writing recovery command&#8230;</string>
@@ -94,6 +68,7 @@
     <string name="module_is_not_activated_yet">Xposed module is not activated yet</string>
     <string name="module_is_not_activated_yet_detailed">%s has been installed, but is not activated yet.</string>
     <string name="activate_and_reboot">Activate and reboot</string>
+    <string name="activate_only">Activate only</string>
     <string name="module_activated">Xposed module has been activated</string>
     <string name="module_empty_description">(no description provided)</string>
     <string name="module_no_ui">This module does not provide a user interface</string>
@@ -101,9 +76,9 @@
     <string name="xposed_module_list_updated">Xposed module list was updated\nChanges will become active on reboot</string>
     <string name="xposed_module_updated_notification_title">Xposed module updated</string>
     <string name="xposed_module_updated_notification">Reboot to activate changes</string>
-    <string name="warning_xposed_min_version">This module requires a newer XposedBridge version (%d) and thus cannot be activated.</string>
-    <string name="no_min_version_specified">This module does not specify the XposedBridge version it needs.</string>
-    <string name="warning_min_version_too_low">This module was created for XposedBridge version %1$d, but due to incompatible changes in version %2$d, it has been disabled.</string>
+    <string name="warning_xposed_min_version">This module requires a newer Xposed version (%d) and thus cannot be activated.</string>
+    <string name="no_min_version_specified">This module does not specify the Xposed version it needs.</string>
+    <string name="warning_min_version_too_low">This module was created for Xposed version %1$d, but due to incompatible changes in version %2$d, it has been disabled.</string>
     <string name="module_launch">Launch UI</string>
     <string name="module_download_updates">Download/Updates</string>
     <string name="module_support">Support</string>
@@ -152,24 +127,16 @@
     <string name="install_mode_recovery_auto">Recovery (flash zip automatically)</string>
     <string name="install_mode_recovery_manual">Recovery (write zip to SD card, flash manually)</string>
     <string name="settings_group_download">Download</string>
-    <string name="settings_enable_downloads">Enable downloads</string>
-    <string name="settings_enable_downloads_summary">Allow Xposed Installer to check for updates and new modules</string>
     <string name="settings_release_type">Versions to be shown</string>
     <string name="settings_group_experimental">Experimental</string>
     <string name="settings_disable_resources">Disabled resource hooks</string>
     <string name="settings_disable_resources_summary">Workaround for conflicts with theming engines\n<b>WARNING:</b> Modules which try to change resources will not work when this is enabled.</string>
-    <string name="settings_performance_experiment" tools:ignore="UnusedResources">Performance experiment</string>
-    <string name="settings_performance_experiment_summary" tools:ignore="UnusedResources">If you enable this, your system performance might either increase, decrease or stay the same. Feel free to try it and report back which effect you see (or if there is none at all). You need to reinstall the framework and reboot after changing this.</string>
     <string name="settings_group_app">Application</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_black">Black (useful for AMOLED screens)</string>
     <string name="settings_default_view">Default view</string>
-    <string name="settings_default_view_framework">Framework</string>
-    <string name="settings_default_view_modules">Modules</string>
-    <string name="settings_default_view_downloads">Download</string>
-    <string name="settings_default_view_logs">Logs</string>
 
     <!-- Support tab -->
     <string name="support_modules_label">Support for modules</string>
@@ -177,28 +144,24 @@
     <string name="support_framework_label">Framework/Installer support</string>
     <string name="support_faq_label">FAQ/known issues</string>
     <string name="support_donate_label">Donate</string>
-    <string name="support_donate_description">If you would like to say thanks for Xposed, you can donate to rovo89 here:</string>
+    <string name="support_donate_description">If you would like to say thanks for Xposed, you can donate to rovo89 here</string>
 
     <!-- Logs tab  -->
-    <string name="logs_load_failed">Could not read log:</string>
     <string name="logs_save_failed">Could not write log to SD card:</string>
     <string name="sdcard_not_writable">SD card not found or not writable</string>
-    <string name="log_too_large">Log file is larger than %1$,d kB, skipped first %2$,d kB</string>
     <string name="menuClearLog">Clear log now</string>
     <string name="logs_cleared">Log successfully cleared</string>
     <string name="logs_clear_failed">Could not clear the log:</string>
     <string name="log_is_empty">Log is empty</string>
 
     <!-- About tab -->
-    <string name="about_developers_label">Main developers:</string>
-    <string name="about_developers"><a href="http://forum.xda-developers.com/member.php?u=4419114">rovo89</a> and <a href="http://forum.xda-developers.com/member.php?u=4322181">Tungstwenty</a></string>
-    <string name="about_developers_warning">Please do <b>not</b> contact us directly for support, use the link below.</string>
-    <string name="about_translator_label">Translator:</string>
+    <string name="about_developers_label">Main developers</string>
+    <string name="about_developers"><a href="http://forum.xda-developers.com/member.php?u=4419114">rovo89</a> and <a href="http://forum.xda-developers.com/member.php?u=4322181">Tungstwenty</a>\n<a href="http://forum.xda-developers.com/member.php?u=4756862">-BioHaZard-</a> and <a href="http://forum.xda-developers.com/member.php?u=5345056">dvdandroid</a> for bug fixes and Material Design</string>
+    <string name="about_translator_label">Translator</string>
     <string name="translator"></string>
-    <string name="about_version_label">Version of this app:</string>
-    <string name="about_source_label">Source code:</string>
-    <string name="about_support_label">Get support at:</string>
-    <string name="about_libraries_label">Used libraries:</string>
+    <string name="about_version_label">Version</string>
+    <string name="about_source_label">Source code</string>
+    <string name="about_libraries_label">Used libraries</string>
 
     <!-- DownloadView -->
     <string name="download_view_download">Download</string>
@@ -215,10 +178,149 @@
     <string name="download_could_not_read_file">Could not read downloaded file: %s</string>
     <string name="download_no_valid_apk">Downloaded file is not a valid APK (or incompatible)</string>
     <string name="download_incorrect_package_name">Package name is incorrect (downloaded: %1$s, expected: %2$s)</string>
+    <string name="download_running">Download is running</string>
+    <string name="download_progress">%1$,d / %2$,d kB</string>
 
     <!-- RepoLoader -->
     <string name="repo_download_failed_http">Downloading %1$s failed: %2$d (%3$s)</string>
     <string name="repo_download_failed">Downloading %1$s failed: %2$s</string>
     <string name="repo_load_failed">Cannot load repository from %1$s:\n%2$s</string>
+    <string name="choose_color">Choose a color…</string>
+
+    <string name="warning_installed_on_external_storage">This module cannot be loaded because it\'s installed on the SD card, please move it to internal storage.</string>
+    <string name="view">VIEW</string>
+    <string name="export_">Export…</string>
+    <string name="import_">Import…</string>
+    <string name="export_enabled_modules">Export enabled modules list</string>
+    <string name="import_enabled_modules">Import enabled modules list</string>
+    <string name="export_installed_modules">Export installed modules list</string>
+    <string name="import_installed_modules">Import installed modules list</string>
+    <string name="no_installed_modules">There are no installed modules!</string>
+    <string name="enable_heads_up">Enable Heads-Up notification</string>
+    <string name="enable_heads_up_summary">This option enables heads up notification on new/updated module</string>
+    <string name="nav_bar_coloration">Colorate navigation bar</string>
+    <string name="no_backup_found">No backup found</string>
+    <string name="no_enabled_modules">There are no modules enabled</string>
+
+    <string name="share">Share with…</string>
+    <string name="back">Back</string>
+    <string name="loadingError">Error getting the list of installers/uninstallers.\nCannot access Internet, or server has a bug</string>
+    <string name="info">Info</string>
+    <string name="infoInstaller">
+        Name: %1$s
+        \nSDK: %2$d
+        \nArchitecture: %3$s
+        \nVersion: %4$s
+    </string>
+    <string name="infoUninstaller">
+        Name: %1$s
+        \nArchitecture: %2$s
+        \nDate: %3$s
+    </string>
+    <string name="downloadZipOk">%1$s downloaded correctly</string>
+    <string name="permissionNotGranted">This feature will not work without permission to write external storage.</string>
+    <string name="warningArchitecture">HAVE YOU CHOSEN THE RIGHT XPOSED ZIP ARCHITECTURE?\nWrong zip can damage your phone!</string>
+    <string name="newVersion">New version of Xposed Installer is available! Update it!</string>
+    <string name="update">Update</string>
+    <string name="choose_icon">Choose an icon</string>
+    <string name="custom_icon">Custom icon</string>
+    <string name="not_installed_no_lollipop">Xposed Framework is not installed.</string>
+    <string name="notify_module_update">Enable module update notification</string>
+
+    <string name="md_back_label">Back</string>
+    <string name="md_done_label">Done</string>
+    <string name="md_cancel_label">Cancel</string>
+    <string name="md_choose_label">Choose</string>
+    <string name="md_error_label">Error</string>
+    <string name="md_storage_perm_error">Your app has not been granted the READ_EXTERNAL_STORAGE permission.</string>
+    <string name="md_custom_label">Custom</string>
+    <string name="md_presets_label">Presets</string>
+    <string name="changelog">Changelog</string>
+    <string name="scroll_top">Scroll to top</string>
+    <string name="add_bookmark">Add bookmark</string>
+    <string name="remove_bookmark">Remove bookmark</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="no_bookmark_added">No bookmark added</string>
+    <string name="bookmark_added">Bookmark added</string>
+    <string name="bookmark_removed">Bookmark removed</string>
+    <string name="undo">Undo</string>
+    <string name="notification_coloration">Colorate notification icon</string>
+    <string name="file_is_empty">File is empty</string>
+    <string name="install_with_su">Install module with root</string>
+    <string name="install_with_su_summ">If checked Xposed Installer will install modules without a prompt</string>
+    <string name="install_remove">Install and remove</string>
+    <string name="download_remove">Download and remove</string>
+    <string name="module_saved">Module saved at %1$s</string>
+    <string name="ignore_updates">Ignore update</string>
+    <string name="ignore_updates_summ">Ignore updates for a specific module.</string>
+    <string name="reboot_recovery">Reboot to recovery</string>
+    <string name="loading">Loading…</string>
+    <string name="chrome_custom_tabs">Chrome Custom Tabs</string>
+    <string name="chrome_custom_tabs_summ">Open links in internal browser</string>
+    <string name="scroll_bottom">Scroll to bottom</string>
+    <string name="open_drawer_summ">Open the navigation drawer automatically at startup</string>
+    <string name="open_drawer">Open navigation drawer automatically</string>
+    <string name="share_app">Share app</string>
+    <string name="share_app_text">Check this out: Xposed Installer in Material Design! %s</string>
+    <string name="status">Xposed Status</string>
+    <string name="xposed_on_next_reboot">Xposed Framework will be enabled on next reboot</string>
+    <string name="xposed_off_next_reboot">Xposed Framework will be disabled on next reboot</string>
+    <string name="rovo_89_old_icon">rovo89 (old)</string>
+    <string name="confirm_reboots">Confirm reboots</string>
+    <string name="skip_xposedminversion_check">Skip \'xposedminversion\' check</string>
+    <string name="skip_xposedminversion_check_summ">Skip \'xposedminversion\' check for modules</string>
+
+    <string name="compatibility">Compatibility</string>
+    <string name="details">Details</string>
+    <string name="look_and_feel">Look and feel</string>
+    <string name="support_xda">Get support on XDA thread</string>
+    <string name="android_sdk">Android %1$s %2$s (API %3$d)</string>
+    <string name="later">Later</string>
+    <string name="save">Save</string>
+    <string name="download_location">Download location</string>
+    <string name="download_location_summ">Download location for APK files (modules only)</string>
+    <string name="restart_needed">Restart needed</string>
+    <string name="cache_cleaned">App\'s cache has been cleaned. Restart is needed</string>
+    <string name="update_download_list">The download\'s module list will be loaded in few seconds</string>
+    <string name="no_connection_available">No connection available</string>
+    <string name="not_logcat">If someone asked you an Android Logcat, you\'re in the wrong section. This is the Xposed log; if you need a logcat, on XDA you can find what you need</string>
+    <string name="force_english">Force English language</string>
+    <string name="warning_language">Language change will be applied after application restart.</string>
+    <string name="not_flashable_inapp">This zip file cannot be flashed in app. Installing automatically in recovery</string>
+    <string name="not_now">Not now</string>
+    <string name="countdown">%1$s (%2$d)</string>
+    <string name="flash_error_timeout">Timeout occurred</string>
+    <string name="flash_error_shell_died">Execution aborted unexpectedly</string>
+    <string name="flash_error_invalid_zip">Not a flashable ZIP file</string>
+    <string name="flash_error_not_flashable_in_app">This file can only be flashed via recovery</string>
+    <string name="flash_error_default">Error %d occurred</string>
+    <string name="installation_error">Installation error</string>
+    <string name="installation_successful">Installation successful</string>
+    <string name="installation_successful_message">%s installed successfully</string>
+    <string name="installation_error_message">%1$s installation failed (%2$s)</string>
+    <string name="installation_apk_normal">Install APK normally</string>
+    <string name="install_load">Installing…</string>
+    <string name="install_load_apk">Installing %s</string>
+
+    <string name="rovo89_summary">Main creator of Xposed</string>
+    <string name="tungstwenty_summary">Helped with his many contributions, both in code and thoughts</string>
+    <string name="dvdandroid_summary">Creator of this Xposed Installer</string>
+    <string name="biohazard_summary">Helped with Material Design implementation</string>
+    <string name="unstable_build">This is a unstable build. Install it at your own risk.</string>
+    <string name="alt_download_method">Alternative download method</string>
+    <string name="alt_download_method_summ">Check this option if you get issues when downloading a module</string>
+
+    <string name="known_issue_wrong_base_directory">Wrong base directory: %1$s</string>
+    <string name="known_issue_missing_base_directory">Missing base directory</string>
+    <string name="installer_needs_update">%1$s needs to be updated</string>
+
+    <string name="dexopt_now">Optimize apps now</string>
+    <string name="this_may_take_a_while">This may take a while.</string>
+    <string name="done">Done!</string>
+    <string name="verified_boot_deactivated">Verified Boot is deactivated</string>
+    <string name="verified_boot_active">Verified Boot is active</string>
+    <string name="verified_boot_explanation">Verified Boot (dm-verity) prevents the device from booting if the system partition is modified.\n<b>Installing Xposed is not recommended!</b></string>
+    <string name="ignore_chinese">Ignore Chinese characters</string>
+    <string name="ignore_chinese_summary">Hide Chinese modules from list. Modules are still available in search window. Enabling this option may result in slow performance.</string>
 
 </resources>

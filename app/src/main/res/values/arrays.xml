@@ -1,4 +1,5 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
     <string-array name="download_sort_order" translatable="false">
         <item>@string/download_sorting_status</item>
@@ -25,10 +26,10 @@
     </string-array>
 
     <string-array name="default_view_texts" translatable="false">
-        <item>@string/settings_default_view_framework</item>
-        <item>@string/settings_default_view_modules</item>
-        <item>@string/settings_default_view_downloads</item>
-        <item>@string/settings_default_view_logs</item>
+        <item>@string/nav_item_install</item>
+        <item>@string/nav_item_modules</item>
+        <item>@string/nav_item_download</item>
+        <item>@string/nav_item_logs</item>
     </string-array>
 
     <string-array name="theme_values" translatable="false">
@@ -68,6 +69,30 @@
         <item>stable</item>
         <item>beta</item>
         <item>experimental</item>
+    </string-array>
+
+    <string-array name="icons">
+        <item>dvdandroid</item>
+        <item>hjmodi</item>
+        <item>rovo89</item>
+        <item>@string/rovo_89_old_icon</item>
+        <item>staol</item>
+    </string-array>
+
+    <string-array name="iconsValues" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </string-array>
+
+    <string-array name="iconsDrawables" translatable="false">
+        <item>ic_launcher</item>
+        <item>ic_launcher_hjmodi</item>
+        <item>ic_launcher_rovo</item>
+        <item>ic_launcher_rovo_old</item>
+        <item>ic_launcher_staol</item>
     </string-array>
 
 </resources>

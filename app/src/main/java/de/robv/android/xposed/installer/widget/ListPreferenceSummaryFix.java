@@ -1,21 +1,22 @@
 package de.robv.android.xposed.installer.widget;
 
 import android.content.Context;
-import android.preference.ListPreference;
 import android.util.AttributeSet;
 
-public class ListPreferenceSummaryFix extends ListPreference {
-	public ListPreferenceSummaryFix(Context context) {
-		super(context);
-	}
+import com.afollestad.materialdialogs.prefs.MaterialListPreference;
 
-	public ListPreferenceSummaryFix(Context context, AttributeSet attrs) {
-		super(context, attrs);
-	}
+public class ListPreferenceSummaryFix extends MaterialListPreference {
+    public ListPreferenceSummaryFix(Context context) {
+        super(context);
+    }
 
-	@Override
-	public void setValue(String value) {
-		super.setValue(value);
-		notifyChanged();
-	}
+    public ListPreferenceSummaryFix(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    @Override
+    public void setValue(String value) {
+        super.setValue(value);
+        notifyChanged();
+    }
 }
